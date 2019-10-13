@@ -132,6 +132,17 @@
 	 (2.6,2.5):real*real
 ##### 表达式的求值
 	传值调用
-	
+	E1 andalso E2是下式的简写
+	if E1 the E2 else false
+##### 局部声明
+	fun fraction (n,d)=
+		let val com= gcd(n,d)
+		in (n div com,d div com)  end;
+	>val fraction = fn:int *int ->int *int
+	let表达式 let D in E end
+	D通常是复合声明，D1;D2;D3;...;Dn  分号可选
+	local 可以隐藏声明
+	local D1 in D2 end
+	D1只在D2内可见。
 	
 	 
