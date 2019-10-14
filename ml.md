@@ -14,6 +14,7 @@
 	//以关键字fun开始，函数名为area，参数为r，函数体（body）为pi*r*r;
 	>val area= fn : real -> real;
 	//无论是定义还是调用函数参数的()都是可选的
+	但是多个参数的情况下，括号必须有。无论是函数定义还是函数调用。
 
 ###### 注释
 	以(*开始，以*)结束，可以跨越数行。
@@ -133,7 +134,7 @@
 ##### 表达式的求值
 	传值调用
 	E1 andalso E2是下式的简写
-	if E1 the E2 else false
+	if E1 then E2 else false
 ##### 局部声明
 	fun fraction (n,d)=
 		let val com= gcd(n,d)
@@ -144,5 +145,3 @@
 	local 可以隐藏声明
 	local D1 in D2 end
 	D1只在D2内可见。
-	
-	 

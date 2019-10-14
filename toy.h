@@ -14,9 +14,8 @@
 // The lexer returns tokens [0-255] if it is an unknown character, otherwise one
 // of these for known things.
 enum Token
-{
+{	
 	tok_eof = -1,
-
 	tok_abstype = -2,
 	tok_and = -3,
 	tok_andalso = -4,
@@ -39,7 +38,6 @@ enum Token
 	tok_infixr = -21,
 	tok_let = -22,
 	tok_local = -23,
-
 	tok_nonfix = -24,
 	tok_of = -25,
 	tok_op = -26,
@@ -61,11 +59,9 @@ enum Token
 	tok_withtype = -42,
 	tok_identifier = -43,
 	tok_number = -44,
-
 	tok_int = -45,
 	tok_real = -46,
 	tok_not = -47,
-
 };
 
 static std::string IdentifierStr; // Filled in if tok_identifier
@@ -79,7 +75,7 @@ static int gettok()
 	// Skip any whitespace.
 	while (isspace(LastChar))
 		LastChar = getchar();
-
+	//判断是否是英文字母
 	if (isalpha(LastChar))
 	{ // identifier: [a-zA-Z][a-zA-Z0-9]*
 		IdentifierStr = LastChar;
@@ -189,6 +185,7 @@ static int gettok()
 		return tok_number;
 	}
 
+	//暂时不好改
 	if (LastChar == '#')
 	{
 		// Comment until end of line.
