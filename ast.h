@@ -33,13 +33,20 @@ public:
 };
 
 //变量节点//如何确定type
+template<typename T>
 class VariableExprAST : public ExprAST
 {
 private:
     string name;
 	 string type;
+	 T value;//此类型的数值
 public:
-    VariableExprAST(string s,string ty) : name(s),type(ty) {}
+	 //处理变量引用的时候,可以不带类型
+	 VariableExprAST(string n):name(n),type(nullptr){};
+    VariableExprAST(string s,string ty) : name(s),type(ty),value(0) {}
+	 VariableExprAST(string s,string ty,T val):name(s),type(ty),value(val){}
+	 void setType(string t):type(t){}
+	 void setValue(T v):value(v){};
 };
 
 //中间操作符节点

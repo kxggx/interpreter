@@ -62,6 +62,8 @@ enum Token
 	tok_int = -45,
 	tok_real = -46,
 	tok_not = -47,
+	tok_int_num=-48,
+	tok_real_num=-49
 };
 
 static std::string IdentifierStr; // Filled in if tok_identifier
@@ -173,16 +175,23 @@ static int gettok()
 		printf("location: %d\n");
 		printf("accept a number!\n");
 
+		bool isreal=false;
 		std::string NumStr;
 		do
 		{
+			if(LastChar == '.')
+				isreal=true;
 			NumStr += LastChar;
 			LastChar = getchar();
 		} while (isdigit(LastChar) || LastChar == '.' || LastChar == '~' || LastChar == 'E');
-
 		NumVal = strtod(NumStr.c_str(), nullptr);
-		printf("number is %f\n", NumVal);
-		return tok_number;
+		if(isreal){
+			realNum=strtod(NumStr.c_str(),nullptr);
+			return tok_real_num;
+		}else{
+			intNum=strtod(NumStr.c_str(),nullptr);
+			return tok_int_num;
+		}
 	}
 
 	//暂时不好改
