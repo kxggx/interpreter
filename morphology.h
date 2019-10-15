@@ -6,13 +6,23 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include<iostream>
 
+using namespace std;
 //===----------------------------------------------------------------------===//
 // Lexer
 //===----------------------------------------------------------------------===//
 
 // The lexer returns tokens [0-255] if it is an unknown character, otherwise one
 // of these for known things.
+
+static double realNum;
+static int intNum;
+static int CurTok;
+static string typeval;
+static string variableVal;
+static int mycount=0;
+
 enum Token
 {	
 	tok_eof = -1,
@@ -58,7 +68,7 @@ enum Token
 	tok_with = -41,
 	tok_withtype = -42,
 	tok_identifier = -43,
-	tok_number = -44,
+	tok_number = -44,//没有
 	tok_int = -45,
 	tok_real = -46,
 	tok_not = -47,
@@ -159,14 +169,20 @@ static int gettok()
 			return tok_val;
 		if (IdentifierStr == "where")
 			return tok_where;
+		if (IdentifierStr == "int"){
+			typeval="int";
+			return tok_int;
+		}
+		if(IdentifierStr == "real"){
+			typeval = "real";
+			return tok_real;
+		}
 		if (IdentifierStr == "while")
 			return tok_while;
 		if (IdentifierStr == "with")
 			return tok_with;
 		if (IdentifierStr == "withtype")
 			return tok_withtype;
-		if (IdentifierStr == "number")
-			return tok_number;
 		return tok_identifier;
 	}
 
@@ -184,12 +200,11 @@ static int gettok()
 			NumStr += LastChar;
 			LastChar = getchar();
 		} while (isdigit(LastChar) || LastChar == '.' || LastChar == '~' || LastChar == 'E');
-		NumVal = strtod(NumStr.c_str(), nullptr);
 		if(isreal){
 			realNum=strtod(NumStr.c_str(),nullptr);
 			return tok_real_num;
 		}else{
-			intNum=strtod(NumStr.c_str(),nullptr);
+			intNum=atoi(NumStr.c_str());
 			return tok_int_num;
 		}
 	}
@@ -216,6 +231,10 @@ static int gettok()
 	return ThisChar;
 }
 
+static int getNextToken()
+{
+   return CurTok = gettok();
+}
 static void HandleKeyWord(std::string key)
 {
 	cout << "location: " << mycount << endl;
@@ -361,9 +380,6 @@ static void MainLoop()
 		case tok_identifier:
 			HandleKeyWord("identifier");
 			break;
-		case tok_number:
-			HandleKeyWord("number");
-			break;
 		case tok_int:
 			HandleKeyWord("int");
 			break;
@@ -375,31 +391,8 @@ static void MainLoop()
 			break;
 
 		default:
-			HandleTopLevelExpression();
 			break;
 		}
 	}
 }
 
-//===----------------------------------------------------------------------===//
-// Main driver code.
-//===----------------------------------------------------------------------===//
-
-int main()
-{
-	// Install standard binary operators.
-	// 1 is lowest precedence.
-	BinopPrecedence['<'] = 10;
-	BinopPrecedence['+'] = 20;
-	BinopPrecedence['-'] = 20;
-	BinopPrecedence['*'] = 40; // highest.
-
-	// Prime the first token.
-	fprintf(stderr, "ready> ");
-	getNextToken();
-
-	// Run the main "interpreter loop" now.
-	MainLoop();
-
-	return 0;
-}
