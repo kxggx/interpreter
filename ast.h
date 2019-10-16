@@ -39,7 +39,7 @@ private:
 	 T value;//此类型的数值
 public:
 	 //处理变量引用的时候,可以不带类型
-	 VariableExprAST(string n):name(n),type(nullptr){};
+	 VariableExprAST(string n):name(n),type(""){};
     VariableExprAST(string s,string ty) : name(s),type(ty),value(0) {}
 	 VariableExprAST(string s,string ty,T val):name(s),type(ty),value(val){}
 	 void setType(string t){

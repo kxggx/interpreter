@@ -149,10 +149,9 @@ static ExprAST *ParseIdentifierExpr(){
 //主表达式
 static ExprAST* ParsePrimary(){
 	switch(CurTok){
-		case ';':				getNextToken();break;
 		case tok_identifier:return ParseIdentifierExpr();
-		case tok_real:      return ParseRealExpr();
-		case tok_int:       return ParseIntExpr();
+		case tok_real_num:      return ParseRealExpr();//立即数操作
+		case tok_int_num:       return ParseIntExpr();//立即数
 		default:            return Error("unknown token when ecpecting an expression");
 	}
 }
@@ -166,7 +165,7 @@ static ExprAST* ParseBinOpRHS(int ExprPrec,ExprAST*lhs){
 			return lhs;
 		int BinOp=CurTok;
 		getNextToken();
-		ExprAST *rhs=ParsePrimary();
+		ExprAST *rhs=ParsePrimary();//parse后可能就是';'
 		if(!rhs)return 0;
 		int nextProcedence=getPrecedence();
 		//如果出现有乘除的，直接将有乘除的部分合到一起作为右节点
@@ -244,7 +243,7 @@ static PrototypeAST* ParsePrototype(){
 
 //函数定义
 static FunctionAST* ParseDefinition(){
-	getNextToken();//eat def
+	getNextToken();//eat fun
 	PrototypeAST* proto=ParsePrototype();
 	if(!proto) return 0;
 	//解析完函数前的全部的
