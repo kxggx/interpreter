@@ -1,5 +1,24 @@
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "../include/KaleidoscopeJIT.h"
 #include <algorithm>
+#include <cassert>
 #include <cctype>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <map>
@@ -7,8 +26,16 @@
 #include <string>
 #include <vector>
 #include<iostream>
-
 using namespace std;
+using namespace llvm;
+using namespace llvm::orc;
+
+
+static LLVMContext TheContext;
+static IRBuilder<> Builder(TheContext);
+static std::unique_ptr<Module> TheModule;
+static std::map<std::string, Value*> NamedValues;
+
 //===----------------------------------------------------------------------===//
 // Lexer
 //===----------------------------------------------------------------------===//
@@ -21,10 +48,10 @@ static int intNum;
 static int CurTok;
 static string typeval;
 static string variableVal;
-static int mycount=0;
+static int mycount = 0;
 
 enum Token
-{	
+{
 	tok_eof = -1,
 	tok_abstype = -2,
 	tok_and = -3,
@@ -68,12 +95,12 @@ enum Token
 	tok_with = -41,
 	tok_withtype = -42,
 	tok_identifier = -43,
-	tok_number = -44,//Ê≤°Êúâ
+	tok_number = -44,//√ª”–
 	tok_int = -45,
 	tok_real = -46,
 	tok_not = -47,
-	tok_int_num=-48,
-	tok_real_num=-49
+	tok_int_num = -48,
+	tok_real_num = -49
 };
 
 static std::string IdentifierStr; // Filled in if tok_identifier
@@ -87,7 +114,7 @@ static int gettok()
 	// Skip any whitespace.
 	while (isspace(LastChar))
 		LastChar = getchar();
-	//Âà§Êñ≠ÊòØÂê¶ÊòØËã±ÊñáÂ≠óÊØç
+	//≈–∂œ «∑Ò «”¢Œƒ◊÷ƒ∏
 	if (isalpha(LastChar))
 	{ // identifier: [a-zA-Z][a-zA-Z0-9]*
 		IdentifierStr = LastChar;
@@ -169,11 +196,11 @@ static int gettok()
 			return tok_val;
 		if (IdentifierStr == "where")
 			return tok_where;
-		if (IdentifierStr == "int"){
-			typeval="int";
+		if (IdentifierStr == "int") {
+			typeval = "int";
 			return tok_int;
 		}
-		if(IdentifierStr == "real"){
+		if (IdentifierStr == "real") {
 			typeval = "real";
 			return tok_real;
 		}
@@ -183,6 +210,7 @@ static int gettok()
 			return tok_with;
 		if (IdentifierStr == "withtype")
 			return tok_withtype;
+		variableVal = IdentifierStr;
 		return tok_identifier;
 	}
 
@@ -191,25 +219,26 @@ static int gettok()
 		printf("location: %d\n");
 		printf("accept a number!\n");
 
-		bool isreal=false;
+		bool isreal = false;
 		std::string NumStr;
 		do
 		{
-			if(LastChar == '.')
-				isreal=true;
+			if (LastChar == '.')
+				isreal = true;
 			NumStr += LastChar;
 			LastChar = getchar();
 		} while (isdigit(LastChar) || LastChar == '.' || LastChar == '~' || LastChar == 'E');
-		if(isreal){
-			realNum=strtod(NumStr.c_str(),nullptr);
+		if (isreal) {
+			realNum = strtod(NumStr.c_str(), nullptr);
 			return tok_real_num;
-		}else{
-			intNum=atoi(NumStr.c_str());
+		}
+		else {
+			intNum = atoi(NumStr.c_str());
 			return tok_int_num;
 		}
 	}
 
-	//ÊöÇÊó∂‰∏çÂ•ΩÊîπ
+	//‘› ±≤ª∫√∏ƒ
 	if (LastChar == '#')
 	{
 		// Comment until end of line.
@@ -233,7 +262,7 @@ static int gettok()
 
 static int getNextToken()
 {
-   return CurTok = gettok();
+	return CurTok = gettok();
 }
 static void HandleKeyWord(std::string key)
 {

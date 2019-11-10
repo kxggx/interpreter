@@ -4,105 +4,126 @@
 class ExprAST
 {
 private:
-	 string type;
+	string type;
 public:
-    virtual ~ExprAST() {}
+	virtual ~ExprAST() {}
+	virtual Value* Codegen() = 0;
 };
 
-//realç±»å‹æ•°èŠ‚ç‚¹
+//realÀàĞÍÊı½Úµã
 class NumberRealExprAST : public ExprAST
 {
 private:
-    double num;
-	 string type;
+	double num;
+	string type;
 public:
-    NumberRealExprAST(double r) : num(r),type("real") {}
+	NumberRealExprAST(double r) : num(r), type("real") {}
+	virtual Value* Codegen();
 };
 
-//intç±»å‹æ•°èŠ‚ç‚¹
+//intÀàĞÍÊı½Úµã
 class NumberIntExprAST : public ExprAST
 {
 private:
-    int num;
-	 string type;
+	int num;
+	string type;
 public:
-    NumberIntExprAST(int i) : num(i),type("int") {}
+	NumberIntExprAST(int i) : num(i), type("int") {}
+	virtual Value* Codegen();
 };
 
-//å˜é‡èŠ‚ç‚¹//å¦‚ä½•ç¡®å®štype
+//±äÁ¿½Úµã//ÈçºÎÈ·¶¨type
 template<typename T>
 class VariableExprAST : public ExprAST
 {
 private:
-    string name;
-	 string type;
-	 T value;//æ­¤ç±»å‹çš„æ•°å€¼
+	string name;
+	string type;
+	T value;//´ËÀàĞÍµÄÊıÖµ
 public:
-	 //å¤„ç†å˜é‡å¼•ç”¨çš„æ—¶å€™,å¯ä»¥ä¸å¸¦ç±»å‹
-	 VariableExprAST(string n):name(n),type(""){};
-    VariableExprAST(string s,string ty) : name(s),type(ty),value(0) {}
-	 VariableExprAST(string s,string ty,T val):name(s),type(ty),value(val){}
-	 void setType(string t){
-		 type=t;
-	 }
-	 void setValue(T v){
-		 value=v;
-	 };
+	//´¦Àí±äÁ¿ÒıÓÃµÄÊ±ºò,¿ÉÒÔ²»´øÀàĞÍ
+	VariableExprAST(string n) :name(n), type("") {};
+	VariableExprAST(string s, string ty) : name(s), type(ty), value(0) {}
+	VariableExprAST(string s, string ty, T val) :name(s), type(ty), value(val) {}
+	void setType(string t) {
+		type = t;
+	}
+	void setValue(T v) {
+		value = v;
+	};
+	//code generate
+	virtual Value* Codegen() {
+		Value* V = NamedValues[name];
+		if (!V)
+			return MyErrorV("Unknown variable name");
+		return V;
+	}
 };
 
-//å‚æ•°èŠ‚ç‚¹ï¼Œä¿å­˜å‚æ•°åå’Œç±»å‹
+/*
+//²ÎÊı½Úµã£¬±£´æ²ÎÊıÃûºÍÀàĞÍ
 class ParameterExprAST : public ExprAST
 {
 private:
-    string name;
-	 string type;
+	string name;
+	string type;
 public:
-	 ParameterExprAST(string n,string t):name(n),type(t){}
+	string getName() { return name; }
+	ParameterExprAST(string n, string t) :name(n), type(t) {}
+	virtual Value* Codegen();
 };
-//ä¸­é—´æ“ä½œç¬¦èŠ‚ç‚¹
+*/
+
+//ÖĞ¼ä²Ù×÷·û½Úµã
 class BinaryExprAST : public ExprAST
 {
 private:
-    char Op;
-    ExprAST *LHS, *RHS;
-	 string type;
+	char Op;
+	ExprAST* LHS, * RHS;
+	string type;
 public:
-    BinaryExprAST(char op, ExprAST *l, ExprAST *r) : Op(op), LHS(l), RHS(r),type("op") {}
+	BinaryExprAST(char op, ExprAST* l, ExprAST* r) : Op(op), LHS(l), RHS(r), type("op") {}
+	virtual Value* Codegen();
 };
 
-//ä¿å­˜å‡½æ•°åå’Œå‚æ•°çš„è¡¨è¾¾å¼åˆ—è¡¨
-//å‡½æ•°è°ƒç”¨
+//±£´æº¯ÊıÃûºÍ²ÎÊıµÄ±í´ïÊ½ÁĞ±í
+//º¯Êıµ÷ÓÃ
 class CallExprAST : public ExprAST
 {
 private:
-    string Callee;
-    vector<ExprAST *> Args;
-	 string type;
-public:
-    //å¼•ç”¨ç±»å‹çš„åŸå› ï¼Ÿ
-    CallExprAST(string &c, vector<ExprAST *> &a) : Callee(c), Args(a),type("call") {}
-};
-
-//å‡½æ•°åŸå‹
-//å°†å‚æ•°çš„argå½¢å¼æ”¹ä¸ºäº†ast
-class PrototypeAST
-{
-private:
-	string name;
-	vector<ParameterExprAST* > Args;
+	string Callee;
+	vector<ExprAST*> Args;
 	string type;
 public:
-    PrototypeAST(const string &na,const vector<ParameterExprAST* >  &ar) : name(na), Args(ar) ,type("proto"){}
+	//ÒıÓÃÀàĞÍµÄÔ­Òò£¿
+	CallExprAST(string& c, vector<ExprAST*>& a) : Callee(c), Args(a), type("call") {}
+	virtual Value* Codegen();
 };
 
-//å‡½æ•°æœ¬èº«
+//º¯ÊıÔ­ĞÍ
+//½«²ÎÊıµÄargĞÎÊ½¸ÄÎªÁËast
+class PrototypeAST{
+private:
+	string name;
+	vector<string > Args;
+	string type;
+public:
+	PrototypeAST(const string& na, const vector<string >& ar) : name(na), Args(ar), type("proto") {}
+	Function* Codegen();
+	const std::string& getName() const { return name; }
+};
+
+
+//º¯Êı±¾Éí
 class FunctionAST
 {
 private:
-    PrototypeAST *proto;
-    ExprAST *body;
-	 string type;
+	PrototypeAST* proto;
+	ExprAST* body;
+	string type;
 public:
-    FunctionAST(PrototypeAST *pro, ExprAST *bo) : proto(pro), body(bo),type("fun") {}
+	FunctionAST(PrototypeAST* pro, ExprAST* bo) : proto(pro), body(bo), type("fun") {}
+	Function* Codegen();
 };
+
 

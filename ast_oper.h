@@ -1,11 +1,11 @@
 #include"ast.h" 
 
-//å‡½æ•°è¿ç”¨æ¯”ä¸­ç¼€è¿ç®—ç¬¦ä¼˜å…ˆçº§æ›´é«˜ï¼Œå› æ­¤å¯ä»¥ä¸ç”¨æ‹¬å·ã€‚
+//º¯ÊıÔËÓÃ±ÈÖĞ×ºÔËËã·ûÓÅÏÈ¼¶¸ü¸ß£¬Òò´Ë¿ÉÒÔ²»ÓÃÀ¨ºÅ¡£
 
-//å‡å®šå˜é‡å¿…é¡»æŒ‡å®šç±»å‹
-//å‡å®šå‡½æ•°å¿…é¡»å¸¦æ‹¬å·
+//¼Ù¶¨±äÁ¿±ØĞëÖ¸¶¨ÀàĞÍ
+//¼Ù¶¨º¯Êı±ØĞë´øÀ¨ºÅ
 // + - * 
-// int é™¤æ³•ä¸ºdiv realä¸º/ å–æ¨¡ mod
+// int ³ı·¨Îªdiv realÎª/ È¡Ä£ mod
 //and andalso orelse not 
 //if  then else
 //local let in end
@@ -14,293 +14,433 @@
 //infix  of op case do
 //eof
 
-static ExprAST *ParseExpression();
+static ExprAST* ParseExpression();
 
 
 // + - * / 
-static std::map<char,int> BinOpPrecedence;
-//è·å–æ“ä½œç¬¦çš„ä¼˜å…ˆçº§  //ä½†æ˜¯æ“ä½œç¬¦å¤šäº†div mod 
-//isasciiåˆ¤æ–­å†…å®¹æ˜¯å¦åœ¨1-127ä¹‹é—´
-static int getPrecedence(){
-	if(!isascii(CurTok))
+static std::map<char, int> BinOpPrecedence;
+//»ñÈ¡²Ù×÷·ûµÄÓÅÏÈ¼¶  //µ«ÊÇ²Ù×÷·û¶àÁËdiv mod 
+//isasciiÅĞ¶ÏÄÚÈİÊÇ·ñÔÚ1-127Ö®¼ä
+static int getPrecedence() {
+	if (!isascii(CurTok))
 		return -1;
-	int prec=BinOpPrecedence[CurTok];
-	if(prec<=0)return -1;
+	int prec = BinOpPrecedence[CurTok];
+	if (prec <= 0)return -1;
 	return prec;
 }
 
 
-ExprAST *Error(const char *str)
+ExprAST* MyError(const char* str)
 {
 	cout << "Error:" << str << endl;
 	return 0;
 }
-PrototypeAST *ErrorP(const char *str)
+
+PrototypeAST* ErrorP(const char* str)
 {
-	Error(str);
+	MyError(str);
 	return 0;
 }
 
-FunctionAST *ErrorF(const char *str)
+FunctionAST* ErrorF(const char* str)
 {
-	Error(str);
+	MyError(str);
 	return 0;
 }
 
-//real    è¿”å›ä¸€ä¸ªå®æ•°ç±»å‹çš„èŠ‚ç‚¹
-static ExprAST *ParseRealExpr()
+
+
+//real    ·µ»ØÒ»¸öÊµÊıÀàĞÍµÄ½Úµã
+static ExprAST* ParseRealExpr()
 {
-	ExprAST *result = new  NumberRealExprAST(realNum);
+	ExprAST* result = new  NumberRealExprAST(realNum);
 	getNextToken();
 	return result;
 }
-//int   è¿”å›ä¸€ä¸ªæ•´å‹èŠ‚ç‚¹
-static ExprAST *ParseIntExpr()
+//int   ·µ»ØÒ»¸öÕûĞÍ½Úµã
+static ExprAST* ParseIntExpr()
 {
-	ExprAST *result = new NumberIntExprAST(intNum);
+	ExprAST* result = new NumberIntExprAST(intNum);
 	getNextToken();
 	return result;
 }
 
-//å¤„ç†å˜é‡å£°æ˜
-static ExprAST *ParseVariable(){
-	getNextToken();//è·³è¿‡valå…³é”®å­—
-	if(CurTok!=tok_identifier){
-		return Error("the identifier after val is wrong");
+//´¦Àí±äÁ¿ÉùÃ÷
+static ExprAST* ParseVariable() {
+	getNextToken();//Ìø¹ıval¹Ø¼ü×Ö
+	if (CurTok != tok_identifier) {
+		return MyError("the identifier after val is wrong");
 	}
-	string variab=variableVal;
+	string variab = variableVal;
 	getNextToken();
-	if(CurTok!=':')
-		return Error("the identifier must have a type");
+	if (CurTok != ':')
+		return MyError("the identifier must have a type");
 	getNextToken();
-	//è¿˜æœ‰å­—ç¬¦ä¸²ç±»å‹
-	if(CurTok!=tok_real&&CurTok!=tok_int){
-		return Error("the identifier type is wrong");
+	//»¹ÓĞ×Ö·û´®ÀàĞÍ
+	if (CurTok != tok_real && CurTok != tok_int) {
+		return MyError("the identifier type is wrong");
 	}
-	string typet=typeval;
+	string typet = typeval;
 	getNextToken();
-	//ç»æµ‹è¯•ï¼Œä¼¼ä¹ä¸èƒ½ä¸èµ‹å€¼
-	if(CurTok!='=')
-		return Error("error : identifier has no val assignment");
+	//¾­²âÊÔ£¬ËÆºõ²»ÄÜ²»¸³Öµ
+	if (CurTok != '=')
+		return MyError("error : identifier has no val assignment");
 	getNextToken();
-	//ä¼¼ä¹å…³é”®å­—å’ŒçœŸæ­£çš„ç«‹å³æ•°é‡åˆäº†
-	if(CurTok==tok_real_num){
-		if(typet.compare("real")!=0)
-			return Error("type not matching");
-		else{
+	//ËÆºõ¹Ø¼ü×ÖºÍÕæÕıµÄÁ¢¼´ÊıÖØºÏÁË
+	if (CurTok == tok_real_num) {
+		if (typet.compare("real") != 0)
+			return MyError("type not matching");
+		else {
 			getNextToken();
-			return new VariableExprAST<double>(variableVal,typet,realNum);
+			return new VariableExprAST<double>(variableVal, typet, realNum);
 		}
-	}else if(CurTok==tok_int_num){
-		if(typet.compare("int")!=0)
-			return Error("type not matching");
-		else{
+	}
+	else if (CurTok == tok_int_num) {
+		if (typet.compare("int") != 0)
+			return MyError("type not matching");
+		else {
 			getNextToken();
-			return new  VariableExprAST<int>(variableVal,typet,intNum);
+			return new  VariableExprAST<int>(variableVal, typet, intNum);
 		}
 	}
 }
 
-//å¤„ç†å˜é‡å¼•ç”¨å’Œå‡½æ•°è°ƒç”¨
-//smlä¸­çš„å‡½æ•°å¦‚æœä¸å¸¦æ‹¬å·ï¼Œå¤šä¸ªå‚æ•°çš„æƒ…å†µä¸èƒ½å¸¦é€—å·ï¼Œä»¥ç©ºæ ¼åˆ†éš”
-//æš‚æ—¶åªå¤„ç†å¸¦æ‹¬å·å’Œé€—å·çš„æƒ…å†µ
-static ExprAST *ParseIdentifierExpr(){
-	string IDname=IdentifierStr;//å·²è·å–æ ‡è¯†ç¬¦
+//´¦Àí±äÁ¿ÒıÓÃºÍº¯Êıµ÷ÓÃ
+//smlÖĞµÄº¯ÊıÈç¹û²»´øÀ¨ºÅ£¬¶à¸ö²ÎÊıµÄÇé¿ö²»ÄÜ´ø¶ººÅ£¬ÒÔ¿Õ¸ñ·Ö¸ô
+//ÔİÊ±Ö»´¦Àí´øÀ¨ºÅºÍ¶ººÅµÄÇé¿ö
+static ExprAST* ParseIdentifierExpr() {
+	string IDname = IdentifierStr;//ÒÑ»ñÈ¡±êÊ¶·û
 	getNextToken();
-	//åªæ˜¯ç®€å•çš„å˜é‡
-	//å¯ä»¥æœ‰å˜é‡ç±»å‹è¯´æ˜å¯ä»¥æ²¡æœ‰
-	bool hastype=false;
-	if(CurTok!='('){
-		//æŸ¥çœ‹æ˜¯å¦æœ‰ç±»å‹è¯´æ˜ç¬¦
-		if(CurTok==':'){
-			hastype=true;
+	//Ö»ÊÇ¼òµ¥µÄ±äÁ¿
+	//¿ÉÒÔÓĞ±äÁ¿ÀàĞÍËµÃ÷¿ÉÒÔÃ»ÓĞ
+	bool hastype = false;
+	if (CurTok != '(') {
+		//²é¿´ÊÇ·ñÓĞÀàĞÍËµÃ÷·û
+		if (CurTok == ':') {
+			hastype = true;
 			getNextToken();
-			string type=typeval;
-			if(type.compare("int")!=0&&type.compare("real")!=0){
-				return Error("no such type");
+			string type = typeval;
+			if (type.compare("int") != 0 && type.compare("real") != 0) {
+				return MyError("no such type");
 			}
-			if("int"==type){
-				return new VariableExprAST<int>(IDname,type);
-			}else{
-				return new VariableExprAST<double>(IDname,type);
+			if ("int" == type) {
+				return new VariableExprAST<int>(IDname, type);
+			}
+			else {
+				return new VariableExprAST<double>(IDname, type);
 			}
 		}
-		//å¦‚æœæ²¡æœ‰ç±»å‹è¯´æ˜ç¬¦ï¼Œå¦‚ä½•æ¨å¯¼?
-		//å‡½æ•°ä¸Šæ–¹
+		//Èç¹ûÃ»ÓĞÀàĞÍËµÃ÷·û£¬ÈçºÎÍÆµ¼?
+		//º¯ÊıÉÏ·½
 		return new VariableExprAST<int>(IDname);
 	}
-	//å‡½æ•°è°ƒç”¨
-	if(!hastype)   getNextToken();
+	//º¯Êıµ÷ÓÃ
+	if (!hastype)   getNextToken();
 	vector<ExprAST*>Args;
-	while(CurTok!=')'){//é‡Œé¢å¯èƒ½æœ‰ç±»å‹è¯´æ˜
-		ExprAST* arg=ParseExpression();
-		if(!arg)return 0;
+	while (CurTok != ')') {//ÀïÃæ¿ÉÄÜÓĞÀàĞÍËµÃ÷
+		ExprAST* arg = ParseExpression();
+		if (!arg)return 0;
 		Args.push_back(arg);
-		if(CurTok==')')break;
-		if(CurTok!=',')
-			return Error("Excepted ')' or ',' in arguments");
+		if (CurTok == ')')break;
+		if (CurTok != ',')
+			return MyError("Excepted ')' or ',' in arguments");
 		getNextToken();
 	}
 	getNextToken();//eat ')'
-	//è¿”å›çš„ä¸»è¦æ˜¯å‡½æ•°åå’Œå‚æ•°å
-	return new CallExprAST(IDname,Args);
+	//·µ»ØµÄÖ÷ÒªÊÇº¯ÊıÃûºÍ²ÎÊıÃû
+	return new CallExprAST(IDname, Args);
 }
 
-//ä¸»è¡¨è¾¾å¼
-static ExprAST* ParsePrimary(){
-	switch(CurTok){
-		case tok_identifier:return ParseIdentifierExpr();
-		case tok_real_num:      return ParseRealExpr();//ç«‹å³æ•°æ“ä½œ
-		case tok_int_num:       return ParseIntExpr();//ç«‹å³æ•°
-		default:            return Error("unknown token when ecpecting an expression");
+//Ö÷±í´ïÊ½
+static ExprAST* ParsePrimary() {
+	switch (CurTok) {
+	case tok_identifier:return ParseIdentifierExpr();
+	case tok_real_num:      return ParseRealExpr();//Á¢¼´Êı²Ù×÷
+	case tok_int_num:       return ParseIntExpr();//Á¢¼´Êı
+	default:            return MyError("unknown token when ecpecting an expression");
 	}
 }
-//è§£ææœ‰åºå¯¹åˆ—è¡¨
-//è¿›è¡Œä¼˜å…ˆçº§è§£æ
-static ExprAST* ParseBinOpRHS(int ExprPrec,ExprAST*lhs){
-	while(1){
-		//è·å–ä¸‹ä¸ªæ“ä½œç¬¦ä¼˜å…ˆçº§
-		int TokPrec=getPrecedence();
-		if(TokPrec<ExprPrec)
+//½âÎöÓĞĞò¶ÔÁĞ±í
+//½øĞĞÓÅÏÈ¼¶½âÎö
+static ExprAST* ParseBinOpRHS(int ExprPrec, ExprAST* lhs) {
+	while (1) {
+		//»ñÈ¡ÏÂ¸ö²Ù×÷·ûÓÅÏÈ¼¶
+		int TokPrec = getPrecedence();
+		if (TokPrec < ExprPrec)
 			return lhs;
-		int BinOp=CurTok;
+		int BinOp = CurTok;
 		getNextToken();
-		ExprAST *rhs=ParsePrimary();//parseåå¯èƒ½å°±æ˜¯';'
-		if(!rhs)return 0;
-		int nextProcedence=getPrecedence();
-		//å¦‚æœå‡ºç°æœ‰ä¹˜é™¤çš„ï¼Œç›´æ¥å°†æœ‰ä¹˜é™¤çš„éƒ¨åˆ†åˆåˆ°ä¸€èµ·ä½œä¸ºå³èŠ‚ç‚¹
-		if(TokPrec<nextProcedence){
-			rhs=ParseBinOpRHS(TokPrec+1,rhs);
-			if(!rhs)   return 0;
+		ExprAST* rhs = ParsePrimary();//parseºó¿ÉÄÜ¾ÍÊÇ';'
+		if (!rhs)return 0;
+		int nextProcedence = getPrecedence();
+		//Èç¹û³öÏÖÓĞ³Ë³ıµÄ£¬Ö±½Ó½«ÓĞ³Ë³ıµÄ²¿·ÖºÏµ½Ò»Æğ×÷ÎªÓÒ½Úµã
+		if (TokPrec < nextProcedence) {
+			rhs = ParseBinOpRHS(TokPrec + 1, rhs);
+			if (!rhs)   return 0;
 		}
-		lhs=new BinaryExprAST(BinOp,lhs,rhs);
+		lhs = new BinaryExprAST(BinOp, lhs, rhs);
 	}
 }
-//è¡¨è¾¾å¼çš„è§£æ
-static ExprAST *ParseExpression(){
-	ExprAST* lhs=ParsePrimary();//ç›®å‰è¿”å›çš„æ˜¯intç«‹å³æ•°æˆ–realç«‹å³æ•°æˆ–æ ‡è¯†ç¬¦
-	if(!lhs) return 0;
-	return ParseBinOpRHS(0,lhs);
+//±í´ïÊ½µÄ½âÎö
+static ExprAST* ParseExpression() {
+	ExprAST* lhs = ParsePrimary();//Ä¿Ç°·µ»ØµÄÊÇintÁ¢¼´Êı»òrealÁ¢¼´Êı»ò±êÊ¶·û
+	if (!lhs) return 0;
+	return ParseBinOpRHS(0, lhs);
 }
 
-//æš‚æ—¶ä¸è€ƒè™‘æ³¨é‡Š
-//æ‹¬å·()çš„è§£æ   æ³¨æ„å…¶ä¸­çš„é€’å½’
-//è¿™é‡Œç¡®å®šæ‹¬å·å†…éƒ¨æ˜¯è¡¨è¾¾å¼
-static ExprAST *ParseParenExpr(){
-	getNextToken();//å¿½ç•¥'('
-	ExprAST *re=ParseExpression();
-	if(!re) return 0;
-	//è§£æè¡¨è¾¾å¼åä¸€å®šæ˜¯')'
-	if(CurTok!=')')
-		return Error("expected ')'");
+//ÔİÊ±²»¿¼ÂÇ×¢ÊÍ
+//À¨ºÅ()µÄ½âÎö   ×¢ÒâÆäÖĞµÄµİ¹é
+//ÕâÀïÈ·¶¨À¨ºÅÄÚ²¿ÊÇ±í´ïÊ½
+static ExprAST* ParseParenExpr() {
+	getNextToken();//ºöÂÔ'('
+	ExprAST* re = ParseExpression();
+	if (!re) return 0;
+	//½âÎö±í´ïÊ½ºóÒ»¶¨ÊÇ')'
+	if (CurTok != ')')
+		return MyError("expected ')'");
 	getNextToken();
 	return re;
 }
 
 
 
-//è§£æå‡½æ•°åŸå‹
-//è¿”å›çš„æ˜¯å‡½æ•°åå’Œå‡½æ•°å‚æ•°çš„ç»“ç‚¹
-static PrototypeAST* ParsePrototype(){
-	if(CurTok!=tok_identifier) 
+
+//½âÎöº¯ÊıÔ­ĞÍ
+//·µ»ØµÄÊÇº¯ÊıÃûºÍº¯Êı²ÎÊıµÄ½áµã
+static PrototypeAST* ParsePrototype() {
+	if (CurTok != tok_identifier)
 		return ErrorP("expected function name in prototype");
-	string fnName=IdentifierStr;
+	string fnName = IdentifierStr;
 	getNextToken();
-	if(CurTok != '('){
+	if (CurTok != '(') {
 		return ErrorP("expected '(' in prototype");
-	} 
-	vector<ParameterExprAST *> Args;
+	}
+	vector<string> Args;
 	getNextToken();
-	while(CurTok!=')'){
-		if(CurTok!=tok_identifier)
+	while (CurTok != ')') {
+		if (CurTok != tok_identifier)
 			return ErrorP("error,no identifier!");
-		string IDname=IdentifierStr;
+		string IDname = IdentifierStr;
 		getNextToken();
-		if(CurTok!=':')
-			return ErrorP("error,you should define this variable's type");
-		getNextToken();
-		if(CurTok!=tok_int&&CurTok!=tok_real)
-			return ErrorP("no such type ");
-		string type=typeval;
-		if(type.compare("int")!=0&&type.compare("real")!=0){
-			return ErrorP("error,no such type");
+		if (CurTok == ':') {
+			getNextToken();
+			if (CurTok != tok_int && CurTok != tok_real)
+				return ErrorP("error,expected type!");
+			string type = typeval;
+			if (type.compare("int") != 0 && type.compare("real") != 0) {
+				return ErrorP("error,no such type");
+			}
+			getNextToken();
 		}
-		ParameterExprAST *arg;
-		//è¿™æ ·çš„è¯å¦‚æœå‚æ•°æœ‰ä¸¤ç§å°±ä¼šå‡ºé”™ï¼Œvectorä¸­åªä¼šæ¥å—ä¸€ç§å˜é‡
-		arg=new ParameterExprAST(IDname,type);
+		string arg;
+		//ÕâÑùµÄ»°Èç¹û²ÎÊıÓĞÁ½ÖÖ¾Í»á³ö´í£¬vectorÖĞÖ»»á½ÓÊÜÒ»ÖÖ±äÁ¿
+		arg = IDname;
 		Args.push_back(arg);
-		getNextToken();
-		if( CurTok!=','&&CurTok!=')'){
+		if (CurTok != ',' && CurTok != ')') {
 			return ErrorP("expected ')' in prototype");
 		}
+		if (CurTok == ')')break;
+		getNextToken();//eat ,
 	}
-	if(CurTok!=')'){
+	if (CurTok != ')') {
 		return ErrorP("expected ')' in prototype");
 	}
 	getNextToken();
-	return new PrototypeAST(IdentifierStr,Args);
+	return new PrototypeAST(IdentifierStr, Args);
 }
 
-//å‡½æ•°å®šä¹‰
-static FunctionAST* ParseDefinition(){
+//º¯Êı¶¨Òå
+static FunctionAST* ParseDefinition() {
 	getNextToken();//eat fun
-	PrototypeAST* proto=ParsePrototype();
-	if(!proto) return 0;
-	//è§£æå®Œå‡½æ•°å‰çš„å…¨éƒ¨çš„
-	if(CurTok!='='){//ç”±äºParsePrototypeæœ€åå·²ç»è·³è¿‡äº†')'åˆ°äº†ä¸‹ä¸€ä¸ªï¼Œå¦‚æœæ˜¯å‡½æ•°å®šä¹‰å¿…é¡»ä¸º=
+	PrototypeAST* proto = ParsePrototype();
+	if (!proto) return 0;
+	//½âÎöÍêº¯ÊıÇ°µÄÈ«²¿µÄ
+	if (CurTok != '=') {//ÓÉÓÚParsePrototype×îºóÒÑ¾­Ìø¹ıÁË')'µ½ÁËÏÂÒ»¸ö£¬Èç¹ûÊÇº¯Êı¶¨Òå±ØĞëÎª=
 		return ErrorF("expected '=' in definition");
 	}
 	getNextToken();//eat '='
-	if(ExprAST* E=ParseExpression())
-		return new FunctionAST(proto,E);
+	if (ExprAST * E = ParseExpression())
+		return new FunctionAST(proto, E);
 	return 0;
 }
 
-//å¤„ç†å‡½æ•°å®šä¹‰
-static void HandleDefition(){
-	if(ParseDefinition()){
-		cout<<"Parsed a function definition\n";
-	}else{
+//´¦Àíº¯Êı¶¨Òå
+static void HandleDefition() {
+	if (ParseDefinition()) {
+		cout << "Parsed a function definition\n";
+	}
+	else {
 		getNextToken();
 	}
 }
 
-//å¤„ç†å˜é‡å®šä¹‰ã€‚
-static void HandleVarDefition(){
-	if(ParseVariable()){
-		cout<<"Parsed a variable definition\n";
-	}else{
+//´¦Àí±äÁ¿¶¨Òå¡£
+static void HandleVarDefition() {
+	if (ParseVariable()) {
+		cout << "Parsed a variable definition\n";
+	}
+	else {
 		getNextToken();
 	}
 }
-//å¤„ç†ç›´æ¥å†™ä¸€ä¸ªè¡¨è¾¾å¼çš„æƒ…å†µã€‚
-static void HandleTopLevelExpression(){
-	if(ParseExpression()){
-		cout<<"Parsed a top-level expression\n";
-	}else{
+//´¦ÀíÖ±½ÓĞ´Ò»¸ö±í´ïÊ½µÄÇé¿ö¡£
+static void HandleTopLevelExpression() {
+	if (ParseExpression()) {
+		cout << "Parsed a top-level expression\n";
+	}
+	else {
 		getNextToken();
 	}
 }
 
-//ç”¨äºç›´æ¥è¾“å…¥è¡¨è¾¾å¼æ±‚å€¼
-static FunctionAST *ParseTopLevelExpr() {
-	if (ExprAST *E = ParseExpression()) {
+//ÓÃÓÚÖ±½ÓÊäÈë±í´ïÊ½ÇóÖµ
+static FunctionAST* ParseTopLevelExpr() {
+	if (ExprAST * E = ParseExpression()) {
 		// Make an anonymous proto.
-		PrototypeAST *Proto = new PrototypeAST(" ", vector<ParameterExprAST *>());
+		PrototypeAST* Proto = new PrototypeAST(" ", vector<string>());
 		return new FunctionAST(Proto, E);
 	}
 	return 0;
 }
 
-static void mainLoop(){
-	while(1){
-		cout<<"ready>"<<endl;
-		switch(CurTok){
-			case tok_eof:	return;
-			case ';':		getNextToken();break;
-			case tok_fun:  HandleDefition();break;//å¤„ç†å‡½æ•°å®šä¹‰
-			case tok_val:  HandleVarDefition();break;//å¤„ç†å˜é‡å®šä¹‰
-			default:			HandleTopLevelExpression();
+
+
+
+//===----------------------------------------------------------------------===//
+// Code Generation
+//===----------------------------------------------------------------------===//
+
+Value* MyErrorV(const char* Str)
+{
+	MyError(Str);
+	return 0;
+}
+
+
+//NumberRealExprAST
+Value* NumberRealExprAST::Codegen() {
+	return ConstantFP::get(TheContext, APFloat(num));
+}
+
+//NumberIntExprAST
+
+Value* NumberIntExprAST::Codegen() {
+	return ConstantInt::get(Type::getInt32Ty(TheContext), num);
+}
+
+/*
+//ParameterExprAST
+Value* ParameterExprAST::Codegen() {
+	return;
+}
+*/
+
+
+//BinaryExprAST
+Value* BinaryExprAST::Codegen() {
+	Value* L = LHS->Codegen();
+	Value* R = RHS->Codegen();
+	if (!L || !R)
+		return nullptr;
+
+	switch (Op) {
+	case '+':
+		return Builder.CreateFAdd(L, R, "addtmp");
+	case '-':
+		return Builder.CreateFSub(L, R, "subtmp");
+	case '*':
+		return Builder.CreateFMul(L, R, "multmp");
+	case '<':
+		L = Builder.CreateFCmpULT(L, R, "cmptmp");
+		// Convert bool 0/1 to double 0.0 or 1.0
+		return Builder.CreateUIToFP(L, Type::getDoubleTy(TheContext), "booltmp");
+	default:
+		return MyErrorV("invalid binary operator");
+	}
+}
+//CallExprAST
+Value* CallExprAST::Codegen() {
+	// Look up the name in the global module table.
+	Function* CalleeF = TheModule->getFunction(Callee);
+	if (!CalleeF)
+		return MyErrorV("Unknown function referenced");
+
+	// If argument mismatch error.
+	if (CalleeF->arg_size() != Args.size())
+		return MyErrorV("Incorrect # arguments passed");
+
+	std::vector<Value*> ArgsV;
+	for (unsigned i = 0, e = Args.size(); i != e; ++i) {
+		ArgsV.push_back(Args[i]->Codegen());
+		if (!ArgsV.back())
+			return nullptr;
+	}
+
+	return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+}
+
+//PrototypeAST
+Function* PrototypeAST::Codegen() {
+	// Make the function type:  double(double,double) etc.
+	std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(TheContext));
+	FunctionType* FT =
+		FunctionType::get(Type::getDoubleTy(TheContext), Doubles, false);
+
+	Function* F =
+		Function::Create(FT, Function::ExternalLinkage, name, TheModule.get());
+
+	// Set names for all arguments.
+	unsigned Idx = 0;
+	for (auto& Arg : F->args())
+		Arg.setName(Args[Idx++]);
+	return F;
+}
+
+//FunctionAST
+Function* FunctionAST::Codegen() {
+	// First, check for an existing function from a previous 'extern' declaration.
+	Function* TheFunction = TheModule->getFunction(proto->getName());
+
+	if (!TheFunction)
+		TheFunction = proto->Codegen();
+
+	if (!TheFunction)
+		return nullptr;
+
+	// Create a new basic block to start insertion into.
+	BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
+	Builder.SetInsertPoint(BB);
+
+	// Record the function arguments in the NamedValues map.
+	NamedValues.clear();
+	for (auto& Arg : TheFunction->args())
+		NamedValues[Arg.getName()] = &Arg;
+
+	if (Value * RetVal = body->Codegen()) {
+		// Finish off the function.
+		Builder.CreateRet(RetVal);
+
+		// Validate the generated code, checking for consistency.
+		verifyFunction(*TheFunction);
+
+		return TheFunction;
+	}
+
+	// Error reading body, remove function.
+	TheFunction->eraseFromParent();
+	return nullptr;
+}
+
+
+static void mainLoop() {
+	while (1) {
+		cout << "ready>" << endl;
+		switch (CurTok) {
+		case tok_eof:	return;
+		case ';':		getNextToken(); break;
+		case tok_fun:  HandleDefition(); break;//´¦Àíº¯Êı¶¨Òå
+		case tok_val:  HandleVarDefition(); break;//´¦Àí±äÁ¿¶¨Òå
+		default:			HandleTopLevelExpression();
 		}
 	}
 }
